@@ -42,7 +42,7 @@ def prepare():
     # load binance crypto quotes
     graph = Graph()
     binance = ccxt.binance()
-    graph = add_quotes_to_graph(
+    add_quotes_to_graph(
         tickers=binance.fetch_tickers(),
         markets=binance.fetch_markets(),
         graph=graph
