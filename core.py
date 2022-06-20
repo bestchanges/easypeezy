@@ -1,8 +1,9 @@
 import logging
 from functools import lru_cache
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Dict
 
 from pydantic import BaseModel
+from pydantic.fields import defaultdict, DefaultDict
 
 logger = logging.getLogger(__name__)
 
@@ -44,21 +45,29 @@ class Path(BaseModel):
         return hash(self.edges)
 
 
-class Graph(BaseModel):
-    nodes: Set[Node]
-    edges: List[Edge]
+class Graph():
+
+    def __init__(self):
+        self._nodes: Set[Node] = set()
+        self._edges: List[Edge] = list()
+        self._node_outs: DefaultDict[Node, List[Edge]] = defaultdict(list)
 
     def best_path(self, from_currency: str, to_currency: str, max_length=4) -> List[Path]:
         from_ = Node(currency=from_currency)
         to = Node(currency=to_currency)
         return self.paths_recursive(from_node=from_, to_node=to, max_length=max_length)
 
+    def add(self, edge: Edge):
+        assert edge
+        assert edge.from_
+        assert edge.to
+        self._nodes.add(edge.from_)
+        self._nodes.add(edge.to)
+        self._edges.append(edge)
+        self._node_outs[edge.from_].append(edge)
+
     def __from_node(self, node: Node) -> List[Edge]:
-        found = []
-        for edge in self.edges:
-            if edge.from_ == node:
-                found.append(edge)
-        return found
+        return self._node_outs[node]
 
     def paths_recursive(self, from_node: Node, to_node: Node, max_length: int, edges: List[Edge] = None) -> List[Path]:
         edges = edges if edges else []

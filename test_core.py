@@ -1,7 +1,7 @@
 import pytest
 
 import crypto
-from core import Node, Edge, Path
+from core import Node, Edge, Path, Graph
 
 
 def ticker(symbol, bid, ask):
@@ -82,7 +82,8 @@ markets = [
     ]
 )
 def test_graph(kwargs, expected, expected_rates):
-    graph = crypto.build_graph(tickers=tickers, markets=markets)
+    graph = Graph()
+    crypto.add_quotes_to_graph(tickers=tickers, markets=markets, graph=graph)
     path_rates = graph.best_path(**kwargs)
     # core.display_path_rates(path_rates)
     assert path_rates == expected

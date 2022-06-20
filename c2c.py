@@ -202,15 +202,13 @@ def add_c2c_offers_to_graph(offers: List[Dict], graph: core.Graph, median_price_
     assert all([offer['adv']['fiatUnit'] == fiat_currency for offer in offers])
     assert all([offer['adv']['asset'] == asset_currency for offer in offers])
 
-    fiat_node = core.Node(currency=f'{fiat_currency}(f)')
-    asset_node = core.Node(currency=asset_currency)
-    graph.nodes.add(fiat_node)
-    graph.nodes.add(asset_node)
 
     prices = [Decimal(item['adv']['price']) for item in offers]
     median_price = statistics.median(prices[:median_price_of_first_n])
     assert median_price > 0
 
+    fiat_node = core.Node(currency=f'{fiat_currency}(f)')
+    asset_node = core.Node(currency=asset_currency)
     if trade_type == 'BUY':
         # base:USDT / quote:KZT 450    - trade_type == BUY
         # buy crypto (base) for fiat (quote)
@@ -222,10 +220,5 @@ def add_c2c_offers_to_graph(offers: List[Dict], graph: core.Graph, median_price_
         base = fiat_node
         quote = asset_node
         price = 1 / median_price
-    edge = core.Edge(
-        from_=base,
-        to=quote,
-        price=price,
-        comission=0,
-    )
-    graph.edges.append(edge)
+    edge = core.Edge(from_=base, to=quote, price=price, comission=0)
+    graph.add(edge)

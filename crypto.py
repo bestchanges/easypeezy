@@ -5,9 +5,7 @@ from core import Graph, Node, Edge
 logger = logging.getLogger(__name__)
 
 
-def build_graph(tickers, markets) -> Graph:
-    nodes = set()
-    edges = []
+def add_quotes_to_graph(tickers, markets, graph: Graph):
     market_by_symbold = {v['symbol']: v for v in markets}
     for ticker in tickers.values():
         symbol = ticker['symbol']
@@ -19,15 +17,12 @@ def build_graph(tickers, markets) -> Graph:
         assert len(assets) == 2, f"Symbol {symbol} should be XXX/YYY"
         base = Node(currency=assets[0])
         quote = Node(currency=assets[1])
-        nodes.add(base)
-        nodes.add(quote)
+
         market = market_by_symbold[symbol]
         fee = market['taker']
 
         edge_direct = Edge(from_=base, to=quote, price=ticker['ask'], fee=fee)
-        edges.append(edge_direct)
+        graph.add(edge_direct)
 
         edge_reverse = Edge(from_=quote, to=base, price=1 / ticker['bid'], fee=fee)
-        edges.append(edge_reverse)
-
-    return Graph(edges=edges, nodes=nodes)
+        graph.add(edge_reverse)

@@ -7,28 +7,29 @@ import click
 from requests_cache import install_cache
 
 import c2c
-from core import Path, ordered_paths
-from crypto import build_graph
+from core import Path, ordered_paths, Graph
+from crypto import add_quotes_to_graph
 
 logging.basicConfig(
     level=logging.INFO,
 )
 
-default_expire_after = timedelta(hours=1)
-urls_expire_after = {
-    'c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config': timedelta(days=3),
-    'c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search': timedelta(minutes=30),
-    'api.binance.com/api/v3/exchangeInfo': timedelta(days=3),
-    'api.binance.com/api/v3/ticker/24hr': timedelta(minutes=30),
-}
 
-install_cache(
-    cache_name='cache',
-    expire_after=default_expire_after,
-    urls_expire_after=urls_expire_after,
-    allowable_methods=['GET', 'POST'],
-)
+def install_requests_cache():
+    default_expire_after = timedelta(hours=1)
+    urls_expire_after = {
+        'c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config': timedelta(days=3),
+        'c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search': timedelta(minutes=30),
+        'api.binance.com/api/v3/exchangeInfo': timedelta(days=3),
+        'api.binance.com/api/v3/ticker/24hr': timedelta(minutes=30),
+    }
 
+    install_cache(
+        cache_name='cache',
+        expire_after=default_expire_after,
+        urls_expire_after=urls_expire_after,
+        allowable_methods=['GET', 'POST'],
+    )
 
 
 def display_path_rates(path_rates: List[Path], amount=1) -> None:
@@ -39,10 +40,12 @@ def display_path_rates(path_rates: List[Path], amount=1) -> None:
 
 def prepare():
     # load binance crypto quotes
+    graph = Graph()
     binance = ccxt.binance()
-    graph = build_graph(
+    graph = add_quotes_to_graph(
         tickers=binance.fetch_tickers(),
         markets=binance.fetch_markets(),
+        graph=graph
     )
     return graph
 
@@ -73,6 +76,7 @@ def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
 @click.option('--amount', default=1, help='Amount in source currency.')
 def best_path_cli(currency_from, currency_to, max_length, amount):
     """Print best conversion paths."""
+    install_requests_cache()
     graph = prepare()
     paths = find_paths_for_fiat(currency_from, currency_to, graph, max_length)
     print(f'Found {len(paths)} paths to convert')
