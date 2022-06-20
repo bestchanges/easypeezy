@@ -1,0 +1,4 @@
+requests-cache[all]
+pytest
+ccxt
+click
