@@ -4,15 +4,14 @@ from typing import List
 
 import ccxt
 import click
-import requests
-from requests_cache import CachedSession, install_cache
+from requests_cache import install_cache
 
 import c2c
 from core import Path, ordered_paths
 from crypto import build_graph
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 
 default_expire_after = timedelta(hours=1)
@@ -32,11 +31,10 @@ install_cache(
 
 
 
-def display_path_rates(path_rates: List[Path]) -> None:
+def display_path_rates(path_rates: List[Path], amount=1) -> None:
     for path in ordered_paths(path_rates):
         path_visual = '-'.join([e.from_.currency for e in path.edges] + [path.edges[-1].to.currency])
-        # path_visual = '-'.join(f'{e.from_.currency}-{e.to.currency} ({e.price:.3f})' for e in path.edges)
-        print(f'{path.rate:.3f}', path_visual)
+        print(f'{amount * path.rate:.3f}', path_visual)
 
 
 def prepare():
@@ -72,12 +70,13 @@ def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
 @click.option('--currency-from', default='KZT', help='Source fiat currency.')
 @click.option('--currency-to', default='RUB', help='Target currency.')
 @click.option('--max-length', default=3, help='Maximum length of conversion chain.')
-def best_path_cli(currency_from, currency_to, max_length):
+@click.option('--amount', default=1, help='Amount in source currency.')
+def best_path_cli(currency_from, currency_to, max_length, amount):
     """Print best conversion paths."""
     graph = prepare()
     paths = find_paths_for_fiat(currency_from, currency_to, graph, max_length)
     print(f'Found {len(paths)} paths to convert')
-    display_path_rates(paths)
+    display_path_rates(paths, amount)
 
 
 if __name__ == '__main__':
