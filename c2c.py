@@ -10,7 +10,7 @@ import core
 logger = logging.getLogger(__name__)
 
 
-def binance_c2c_search(session: requests.Session, fiat: str, asset: str, trade_type: str, pay_types=(), countries=(), publisher_type=None, rows=10, page=1):
+def binance_c2c_search(fiat: str, asset: str, trade_type: str, pay_types=(), countries=(), publisher_type=None, rows=10, page=1):
     """
     Search for C2C offers.
 
@@ -37,7 +37,7 @@ def binance_c2c_search(session: requests.Session, fiat: str, asset: str, trade_t
         "fiat": fiat,
         "tradeType": trade_type
     }
-    r = session.post('https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', json=request_payload)
+    r = requests.post('https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', json=request_payload)
     r.raise_for_status()
     response_payload = r.json()
     item = {
@@ -75,12 +75,12 @@ def binance_c2c_search(session: requests.Session, fiat: str, asset: str, trade_t
     return response_payload
 
 
-def binance_c2c_config(session: requests.Session, fiat: str):
+def binance_c2c_config(fiat: str):
     assert fiat
     request_payload = {
         "fiat": fiat,
     }
-    r = session.post('https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config', json=request_payload)
+    r = requests.post('https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config', json=request_payload)
     r.raise_for_status()
     response_payload = r.json()
 
@@ -165,10 +165,9 @@ def binance_c2c_config(session: requests.Session, fiat: str):
     return response_payload
 
 
-def load_binance_c2c_offers(session: requests.Session, fiat: str, trade_type: str, max_offers=10):
+def load_binance_c2c_offers(fiat: str, trade_type: str, max_offers=10):
     logger.info(f'Loading config for {fiat}')
     c2c_config = binance_c2c_config(
-        session,
         fiat=fiat,
     )
     areas = {v['area']: v for v in c2c_config['data']['areas']}
@@ -178,7 +177,7 @@ def load_binance_c2c_offers(session: requests.Session, fiat: str, trade_type: st
     for asset in trade_sides[trade_type]['assets']:
         asset_name = asset['asset']
         logger.info(f'Loading offers for {asset_name}')
-        offers = binance_c2c_search(session, fiat=fiat, asset=asset_name, trade_type=trade_type, rows=max_offers)['data']
+        offers = binance_c2c_search(fiat=fiat, asset=asset_name, trade_type=trade_type, rows=max_offers)['data']
         logger.info(f'Loaded {len(offers)} offers for P2P {trade_type} {fiat} to {asset_name}')
         asset_offers[asset_name] = offers
     return asset_offers

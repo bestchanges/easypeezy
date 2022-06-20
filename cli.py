@@ -5,7 +5,7 @@ from typing import List
 import ccxt
 import click
 import requests
-from requests_cache import CachedSession
+from requests_cache import CachedSession, install_cache
 
 import c2c
 from core import Path, ordered_paths
@@ -23,6 +23,14 @@ urls_expire_after = {
     'api.binance.com/api/v3/ticker/24hr': timedelta(minutes=30),
 }
 
+install_cache(
+    cache_name='cache',
+    expire_after=default_expire_after,
+    urls_expire_after=urls_expire_after,
+    allowable_methods=['GET', 'POST'],
+)
+
+
 
 def display_path_rates(path_rates: List[Path]) -> None:
     for path in ordered_paths(path_rates):
@@ -31,9 +39,9 @@ def display_path_rates(path_rates: List[Path]) -> None:
         print(f'{path.rate:.3f}', path_visual)
 
 
-def prepare(session: requests.Session):
+def prepare():
     # load binance crypto quotes
-    binance = ccxt.binance(config={'session': session})
+    binance = ccxt.binance()
     graph = build_graph(
         tickers=binance.fetch_tickers(),
         markets=binance.fetch_markets(),
@@ -41,17 +49,16 @@ def prepare(session: requests.Session):
     return graph
 
 
-def load_c2c_to_graph(session: requests.Session, fiat_from, fiat_to, graph):
+def load_c2c_to_graph(fiat_from, fiat_to, graph):
     # load binance C2C quotes
-    for offers in c2c.load_binance_c2c_offers(session=session, fiat=fiat_from, trade_type='BUY').values():
+    for offers in c2c.load_binance_c2c_offers(fiat=fiat_from, trade_type='BUY').values():
         c2c.add_c2c_offers_to_graph(offers, graph)
-    c_offers = c2c.load_binance_c2c_offers(session=session, fiat=fiat_to, trade_type='SELL')
-    for offers in c_offers.values():
+    for offers in c2c.load_binance_c2c_offers(fiat=fiat_to, trade_type='SELL').values():
         c2c.add_c2c_offers_to_graph(offers, graph)
 
 
-def find_paths_for_fiat(session, fiat_from, fiat_to, graph, max_length):
-    load_c2c_to_graph(session, fiat_from, fiat_to, graph)
+def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
+    load_c2c_to_graph(fiat_from, fiat_to, graph)
 
     paths = graph.best_path(
         from_currency=f'{fiat_from}(f)',
@@ -67,16 +74,10 @@ def find_paths_for_fiat(session, fiat_from, fiat_to, graph, max_length):
 @click.option('--max-length', default=3, help='Maximum length of conversion chain.')
 def best_path_cli(currency_from, currency_to, max_length):
     """Print best conversion paths."""
-    with CachedSession(
-            cache_name='cache',
-            expire_after=default_expire_after,
-            urls_expire_after=urls_expire_after,
-            allowable_methods=['GET', 'POST'],
-    ) as session:
-        graph = prepare(session)
-        paths = find_paths_for_fiat(session, currency_from, currency_to, graph, max_length)
-        print(f'Found {len(paths)} paths to convert')
-        display_path_rates(paths)
+    graph = prepare()
+    paths = find_paths_for_fiat(currency_from, currency_to, graph, max_length)
+    print(f'Found {len(paths)} paths to convert')
+    display_path_rates(paths)
 
 
 if __name__ == '__main__':
