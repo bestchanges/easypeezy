@@ -2,3 +2,4 @@ requests-cache[all]
 pytest
 ccxt
 click
+fastapi[all]

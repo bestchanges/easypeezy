@@ -1,3 +1,7 @@
+"""
+Cryptocurrencies code.
+"""
+
 import logging
 
 from core import Graph, Node, Edge
