@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     environment: prod
 
     steps:
@@ -41,13 +42,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-#      - name: Deploy to server
-#        uses: fifsky/ssh-action@master
-#        with:
-#          command: |
-#            cd easypeezy &&
-#            docker-compose pull &&
-#            docker-compose up -d
-#          host: ${{ secrets.HOST }}
-#          user: root
-#          key: ${{ secrets.PRIVATE_KEY}}
+      - name: Deploy to server
+        uses: fifsky/ssh-action@master
+        with:
+          command: |
+            cd easypeezy &&
+            docker compose pull &&
+            docker compose up -d
+          host: ${{ secrets.HOST }}
+          user: ubuntu
+          key: ${{ secrets.PRIVATE_KEY}}
