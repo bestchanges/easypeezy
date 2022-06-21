@@ -3,3 +3,4 @@ pytest
 ccxt
 click
 fastapi[all]
+vcrpy
