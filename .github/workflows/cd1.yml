@@ -1,0 +1,23 @@
+name: Create and publish a Docker image
+
+on: [push]
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    environment: prod
+
+    steps:
+      - name: Deploy to server
+        uses: fifsky/ssh-action@master
+        with:
+          command: |
+            cd easypeezy &&
+            docker-compose pull &&
+            docker-compose up -d
+          host: ${{ secrets.HOST }}
+          user: root
+          key: ${{ secrets.PRIVATE_KEY}}

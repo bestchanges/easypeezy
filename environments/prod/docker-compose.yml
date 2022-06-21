@@ -1,0 +1,5 @@
+services:
+  app:
+    image: ghcr.io/bestchanges/easypeezy:release
+    ports:
+      - "80:80"
