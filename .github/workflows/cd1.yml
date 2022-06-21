@@ -1,4 +1,4 @@
-name: Create and publish a Docker image
+name: Deploy to prod
 
 on: [push]
 
@@ -19,5 +19,5 @@ jobs:
             docker-compose pull &&
             docker-compose up -d
           host: ${{ secrets.HOST }}
-          user: root
+          user: ubuntu
           key: ${{ secrets.PRIVATE_KEY}}
