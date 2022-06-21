@@ -16,8 +16,8 @@ jobs:
         with:
           command: |
             cd easypeezy &&
-            docker-compose pull &&
-            docker-compose up -d
+            docker compose pull &&
+            docker compose up -d
           host: ${{ secrets.HOST }}
           user: ubuntu
           key: ${{ secrets.PRIVATE_KEY}}
