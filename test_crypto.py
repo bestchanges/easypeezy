@@ -54,4 +54,3 @@ def test_binance_eth_rub(binance_tickers, binance_markets):
         max_length=2
     )
     assert len(paths) > 0
-    cli.display_path_rates(paths)
