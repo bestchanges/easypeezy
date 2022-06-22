@@ -1,10 +1,13 @@
 from datetime import timedelta
+from decimal import Decimal
+from typing import List, Optional
 
 import ccxt
+from pydantic import BaseModel
 from requests_cache import install_cache
 
 import c2c
-from core import Graph
+from core import Graph, Path
 from crypto import add_quotes_to_graph
 
 
@@ -54,3 +57,62 @@ def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
         max_length=max_length
     )
     return paths
+
+
+def ordered_paths(path_rates: List[Path]) -> List[Path]:
+    """Re-order path rates according to score.
+    Consideration
+    1. conversion rate taken as initial score (including commissions)
+    2. each additional hop reduces score by 2%
+    3. TODO: take into account possible difficulties of conversion
+    """
+    return sorted(path_rates, key=lambda x: x.rate * (1 - 0.02) ** len(x.edges), reverse=True)
+
+
+class Conversion(BaseModel):
+    from_currency: str
+    from_amount: Decimal
+    to_currency: str
+    to_amount: Decimal
+    rate: Decimal
+    url: Optional[str]
+
+
+class ConversionPath(BaseModel):
+    conversion_rate: Decimal
+    source_currency: str
+    amount_source_currency: Decimal
+    target_currency: str
+    amount_target_currency: Decimal
+    conversions: List[Conversion]
+
+
+def prepare_conversion_path(path: Path, source_amount=1) -> ConversionPath:
+    conversion_path = ConversionPath(
+        source_currency=path.edges[0].from_.currency,
+        amount_source_currency=source_amount,
+        conversion_rate=path.rate,
+        target_currency=path.edges[-1].to.currency,
+        amount_target_currency=source_amount * path.rate,
+        conversions=list(),
+    )
+    amount = source_amount
+    for edge in path.edges:
+        converted_amount = edge.converted(amount)
+        conversion = Conversion(
+            from_currency=edge.from_.currency,
+            from_amount=amount,
+            to_currency=edge.to.currency,
+            to_amount=converted_amount,
+            rate=edge.price,
+        )
+        amount = converted_amount
+        conversion_path.conversions.append(conversion)
+    return conversion_path
+
+
+def prepare_conversion_paths(paths: List[Path], source_amount=1) -> List[ConversionPath]:
+    result = []
+    for path in ordered_paths(paths):
+        result.append(prepare_conversion_path(path, source_amount))
+    return result

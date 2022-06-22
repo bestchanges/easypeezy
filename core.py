@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import List, Set, Tuple, Dict
+from typing import List, Set, Tuple
 
 from pydantic import BaseModel
 from pydantic.fields import defaultdict, DefaultDict
@@ -30,6 +30,7 @@ class Edge(BaseModel):
         return hash((self.from_, self.to, self.price, self.fee))
 
 
+# TODO: remove Path. List[Edge] will be enough
 class Path(BaseModel):
     edges: Tuple[Edge, ...]
 
@@ -88,11 +89,3 @@ class Graph():
         return found_paths
 
 
-def ordered_paths(path_rates: List[Path]) -> List[Path]:
-    """Re-order path rates.
-
-    1. By path length (short goes first)
-    2. By price
-
-    """
-    return sorted(path_rates, key=lambda x: (-1 * len(x.edges), -1 * x.rate), reverse=True)
