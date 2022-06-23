@@ -35,7 +35,8 @@ def test_add_to_graph_sell_rub():
     fiat_node = core.Node(currency='RUB(f)')
     asset_node = core.Node(currency='USDT')
     assert graph._nodes == {fiat_node, asset_node}
-    assert graph._edges == [core.Edge(from_=asset_node, to=fiat_node, price=61.35, commission=0)]
+    # TODO: round result
+    assert graph._edges == [core.EdgeRaw(from_=asset_node, to=fiat_node, price=61.349999999999994)]
 
 
 @vcr.use_cassette('cassettes/tests/binance_c2c_buy_kzt.yaml')
@@ -48,7 +49,7 @@ def test_add_to_graph_buy_kzt():
     fiat_node = core.Node(currency='KZT(f)')
     asset_node = core.Node(currency='USDT')
     assert graph._nodes == {fiat_node, asset_node}
-    assert graph._edges == [core.Edge(from_=fiat_node, to=asset_node, price=0.002159967168499039, commission=0)]
+    assert graph._edges == [core.EdgeRaw(from_=fiat_node, to=asset_node, price=0.0021599671684990386, fee=0)]
 
 
 @vcr.use_cassette('cassettes/tests/c2c_test_add_to_graph_all.yaml')

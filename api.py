@@ -12,11 +12,12 @@ async def root():
 
 
 # TODO: rename max_length to 'hops'
-@app.get("/best-rates")
-async def best_path_cli(currency_from: str, currency_to: str, max_length: int = 2, amount: float = 1):
+@app.get("/best-rates/{currency_from}-{currency_to}")
+async def best_path_cli(currency_from: str, currency_to: str, hops: int = 4, amount: float = 1):
     """Return best conversion paths."""
     graph = prepare()
-    paths = find_paths_for_fiat(currency_from, currency_to, graph, max_length)
+    hops = min(hops, 4)
+    paths = find_paths_for_fiat(currency_from, currency_to, graph, hops)
     print(f'Found {len(paths)} paths to convert (Displaying top 10)')
     conversion_paths = prepare_conversion_paths(paths, amount)
     return conversion_paths[:10]

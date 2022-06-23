@@ -47,7 +47,7 @@ markets = [
 def test_binance_eth_rub(binance_tickers, binance_markets):
     graph = core.Graph()
     crypto.add_quotes_to_graph(tickers=binance_tickers, markets=binance_markets, graph=graph)
-    paths = graph.best_path(
+    paths = graph.paths(
         from_currency='ETH',
         to_currency='RUB',
         max_length=2

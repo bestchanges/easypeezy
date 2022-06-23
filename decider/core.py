@@ -1,6 +1,5 @@
 import logging
-from functools import lru_cache
-from typing import List, Set, Tuple
+from typing import List, Set
 
 from pydantic import BaseModel
 from pydantic.fields import defaultdict, DefaultDict
@@ -15,35 +14,35 @@ class Node(BaseModel):
         return hash(self.currency)
 
 
-class Edge(BaseModel):
-    from_: Node
-    to: Node
-    price: float
-    fee: float = 0
+class Edge:
+    def __init__(self, from_: Node, to: Node):
+        self.from_ = from_
+        self.to = to
 
-    def converted(self, amount: float = 1):
+    def commission(self, amount: float = None):
+        pass
+
+    def converted(self, amount: float = 1) -> float:
+        return amount
+
+
+class EdgeRaw(Edge):
+    def __init__(self, from_: Node, to: Node, price: float, fee: float = 0):
+        self.from_ = from_
+        self.to = to
+        self.price = price
+        self.fee = fee
+
+    def converted(self, amount: float = 1) -> float:
         # I have a feeling this calculates incorrectly for case of "1/bid"
         # TODO: check it
         return self.price * amount * (1 - self.fee)
 
-    def __hash__(self) -> int:
-        return hash((self.from_, self.to, self.price, self.fee))
+    def __repr__(self) -> str:
+        return str([self.from_, self.to, self.price, self.fee])
 
-
-# TODO: remove Path. List[Edge] will be enough
-class Path(BaseModel):
-    edges: Tuple[Edge, ...]
-
-    @property
-    @lru_cache()
-    def rate(self):
-        price = 1
-        for edge in self.edges:
-            price *= edge.converted(1)
-        return price
-
-    def __hash__(self) -> int:
-        return hash(self.edges)
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, EdgeRaw) and self.from_ == o.from_ and self.to == o.to and self.price == o.price and self.fee == o.fee
 
 
 class Graph():
@@ -53,7 +52,7 @@ class Graph():
         self._edges: List[Edge] = list()
         self._node_outs: DefaultDict[Node, List[Edge]] = defaultdict(list)
 
-    def best_path(self, from_currency: str, to_currency: str, max_length=4) -> List[Path]:
+    def paths(self, from_currency: str, to_currency: str, max_length=4) -> List[List[Edge]]:
         from_ = Node(currency=from_currency)
         to = Node(currency=to_currency)
         return self.paths_recursive(from_node=from_, to_node=to, max_length=max_length)
@@ -70,10 +69,10 @@ class Graph():
     def __from_node(self, node: Node) -> List[Edge]:
         return self._node_outs[node]
 
-    def paths_recursive(self, from_node: Node, to_node: Node, max_length: int, edges: List[Edge] = None) -> List[Path]:
+    def paths_recursive(self, from_node: Node, to_node: Node, max_length: int, edges: List[Edge] = None) -> List[List[Edge]]:
         edges = edges if edges else []
         if from_node == to_node:
-            return [Path(edges=tuple(edges))]
+            return [edges]
         if len(edges) >= max_length:
             return []
         found_paths = []
@@ -87,5 +86,3 @@ class Graph():
                 edges=new_edges
             )
         return found_paths
-
-

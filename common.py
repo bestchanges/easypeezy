@@ -1,14 +1,15 @@
+import math
 from datetime import timedelta
-from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Iterable
 
 import ccxt
 from pydantic import BaseModel
 from requests_cache import install_cache
 
-import c2c
-from core import Graph, Path
-from crypto import add_quotes_to_graph
+# TODO: non-consistent imports. fix it
+from decider.providers import c2c
+from decider.core import Graph, Edge
+from decider.providers.crypto import add_quotes_to_graph
 
 
 def install_requests_cache():
@@ -51,12 +52,20 @@ def load_c2c_to_graph(fiat_from, fiat_to, graph):
 def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
     load_c2c_to_graph(fiat_from, fiat_to, graph)
 
-    paths = graph.best_path(
+    paths = graph.paths(
         from_currency=f'{fiat_from}(f)',
         to_currency=f'{fiat_to}(f)',
         max_length=max_length
     )
     return paths
+
+
+class Path:
+    def __init__(self, edges: Iterable[Edge]) -> None:
+        self.edges = edges
+
+    def rate(self):
+        return math.prod([edge.converted() for edge in self.edges])
 
 
 def ordered_paths(path_rates: List[Path]) -> List[Path]:
@@ -71,19 +80,19 @@ def ordered_paths(path_rates: List[Path]) -> List[Path]:
 
 class Conversion(BaseModel):
     from_currency: str
-    from_amount: Decimal
+    from_amount: float
     to_currency: str
-    to_amount: Decimal
-    rate: Decimal
+    to_amount: float
+    rate: float
     url: Optional[str]
 
 
 class ConversionPath(BaseModel):
-    conversion_rate: Decimal
+    conversion_rate: float
     source_currency: str
-    amount_source_currency: Decimal
+    amount_source_currency: float
     target_currency: str
-    amount_target_currency: Decimal
+    amount_target_currency: float
     conversions: List[Conversion]
 
 

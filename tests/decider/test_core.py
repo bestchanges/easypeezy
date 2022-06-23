@@ -1,8 +1,11 @@
+import math
+from typing import List
+
 import pytest
 
+from decider.core import Node, Edge, Graph, EdgeRaw
 # TODO: get rig of crypto here. Build graph from scratch
 from decider.providers import crypto
-from decider.core import Node, Edge, Path, Graph
 
 
 def ticker(symbol, bid, ask):
@@ -20,11 +23,11 @@ BTC = Node(currency='BTC')
 EOS = Node(currency='EOS')
 ETH = Node(currency='ETH')
 
-BTC_ETH = Edge(from_=BTC, to=ETH, price=19.23076923076923, fee=0.01)
-ETH_BTC = Edge(from_=ETH, to=BTC, price=0.054, fee=0.01)
-EOS_ETH = Edge(from_=EOS, to=ETH, price=0.054, fee=0.01)
-BTC_USDT = Edge(from_=BTC, to=USDT, price=20230.0, fee=0.1)
-ETH_USDT = Edge(from_=ETH, to=USDT, price=1096.0, fee=0.01)
+BTC_ETH = EdgeRaw(from_=BTC, to=ETH, price=19.23076923076923, fee=0.01)
+ETH_BTC = EdgeRaw(from_=ETH, to=BTC, price=0.054, fee=0.01)
+EOS_ETH = EdgeRaw(from_=EOS, to=ETH, price=0.054, fee=0.01)
+BTC_USDT = EdgeRaw(from_=BTC, to=USDT, price=20230.0, fee=0.1)
+ETH_USDT = EdgeRaw(from_=ETH, to=USDT, price=1096.0, fee=0.01)
 
 tickers = (
     ticker('ETH/BTC', 0.052, 0.054),
@@ -50,17 +53,16 @@ markets = [
         [
             dict(from_currency='ETH', to_currency='USDT', max_length=1),
             [
-                Path(edges=[Edge(from_=ETH, to=USDT, price=1096.0,
-                                 fee=0.01)]),
+                [EdgeRaw(from_=ETH, to=USDT, price=float(1096.0), fee=float(0.01))],
             ],
-            [1085.04],
+            [1085.039999999999999771849168],
         ],
         # 2-hop ETH to USDT
         [
             dict(from_currency='ETH', to_currency='USDT', max_length=2),
             [
-                Path(edges=[ETH_BTC, BTC_USDT]),
-                Path(edges=[ETH_USDT]),
+                [ETH_BTC, BTC_USDT],
+                [ETH_USDT],
             ],
             [973.34622, 1085.04],
         ],
@@ -68,7 +70,7 @@ markets = [
         [
             dict(from_currency='ETH', to_currency='BTC', max_length=1),
             [
-                Path(edges=[ETH_BTC]),
+                [ETH_BTC],
             ],
             [0.05346],
         ],
@@ -76,16 +78,19 @@ markets = [
         [
             dict(from_currency='BTC', to_currency='ETH', max_length=1),
             [
-                Path(edges=[BTC_ETH]),
+                [BTC_ETH],
             ],
             [19.038461538461537],
         ],
     ]
 )
-def test_graph(kwargs, expected, expected_rates):
+def test_graph(kwargs, expected: List[Edge], expected_rates):
     graph = Graph()
     crypto.add_quotes_to_graph(tickers=tickers, markets=markets, graph=graph)
-    path_rates = graph.best_path(**kwargs)
+    paths = graph.paths(**kwargs)
     # core.display_path_rates(path_rates)
-    assert path_rates == expected
-    assert [v.rate for v in path_rates] == expected_rates
+    assert paths == expected
+    assert [math.prod([edge.converted() for edge in path]) for path in paths] == expected_rates
+
+
+# TODO: write test to remove loops in found Path

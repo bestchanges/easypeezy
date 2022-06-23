@@ -2,5 +2,8 @@ services:
   app:
     build:
       context: .
+    volumes:
+      - .:/app
+    command: uvicorn api:app --port 80 --host 0.0.0.0 --reload
     ports:
       - "8001:80"

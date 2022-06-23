@@ -3,7 +3,6 @@ Customer to Customer exchange providers.
 """
 import logging
 import statistics
-from decimal import Decimal
 from typing import List, Dict
 
 import requests
@@ -206,7 +205,7 @@ def add_c2c_offers_to_graph(offers: List[Dict], graph: core.Graph, median_price_
     assert all([offer['adv']['asset'] == asset_currency for offer in offers])
 
 
-    prices = [Decimal(item['adv']['price']) for item in offers]
+    prices = [float(item['adv']['price']) for item in offers]
     median_price = statistics.median(prices[:median_price_of_first_n])
     assert median_price > 0
 
@@ -223,5 +222,5 @@ def add_c2c_offers_to_graph(offers: List[Dict], graph: core.Graph, median_price_
         base = fiat_node
         quote = asset_node
         price = 1 / median_price
-    edge = core.Edge(from_=base, to=quote, price=price, comission=0)
+    edge = core.EdgeRaw(from_=base, to=quote, price=float(price), fee=float(0))
     graph.add(edge)
