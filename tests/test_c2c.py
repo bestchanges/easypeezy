@@ -1,8 +1,8 @@
 import vcr
 
-import c2c
-import core
-from core import Node
+from decider.providers import c2c
+from decider import core
+from decider.core import Node
 
 
 @vcr.use_cassette('cassettes/tests/binance_c2c_buy_kzt.yaml')

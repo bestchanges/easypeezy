@@ -1,10 +1,10 @@
 """
-Cryptocurrencies code.
+Cryptocurrencies providers.
 """
 
 import logging
 
-from core import Graph, Node, Edge
+from decider.core import Graph, Node, Edge
 
 logger = logging.getLogger(__name__)
 

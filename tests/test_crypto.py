@@ -2,9 +2,8 @@ import ccxt
 import pytest
 import vcr
 
-import cli
-import core
-import crypto
+from decider import core
+from decider.providers import crypto
 
 
 @pytest.fixture

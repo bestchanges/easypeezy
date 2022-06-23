@@ -1,3 +1,6 @@
+"""
+Customer to Customer exchange providers.
+"""
 import logging
 import statistics
 from decimal import Decimal
@@ -5,7 +8,7 @@ from typing import List, Dict
 
 import requests
 
-import core
+from decider import core
 
 logger = logging.getLogger(__name__)
 

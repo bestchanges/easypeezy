@@ -1,7 +1,8 @@
 import pytest
 
-import crypto
-from core import Node, Edge, Path, Graph
+# TODO: get rig of crypto here. Build graph from scratch
+from decider.providers import crypto
+from decider.core import Node, Edge, Path, Graph
 
 
 def ticker(symbol, bid, ask):
