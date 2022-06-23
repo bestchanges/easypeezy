@@ -6,9 +6,9 @@ import ccxt
 from pydantic import BaseModel
 from requests_cache import install_cache
 
+from decider.core import Graph, Edge
 # TODO: non-consistent imports. fix it
 from decider.providers import c2c
-from decider.core import Graph, Edge
 from decider.providers.crypto import add_quotes_to_graph
 
 
@@ -57,25 +57,32 @@ def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
         to_currency=f'{fiat_to}(f)',
         max_length=max_length
     )
-    return paths
+    return [Path(edges=edges) for edges in paths]
 
 
 class Path:
-    def __init__(self, edges: Iterable[Edge]) -> None:
+    def __init__(self, edges: List[Edge]) -> None:
         self.edges = edges
 
     def rate(self):
-        return math.prod([edge.converted() for edge in self.edges])
+        return math.prod([edge.converted() * (1 - edge.commission()) for edge in self.edges])
+
+    def score(self):
+        """
+        Score for ordering paths. Highter score - better path.
+        Consideration
+        1. conversion rate taken as initial score (including commissions)
+        2. each additional hop reduces score by 2%
+        3. TODO: take into account other possible difficulties of conversion
+
+        """
+        return self.rate() * (1 - 0.02) ** len(self.edges)
 
 
 def ordered_paths(path_rates: List[Path]) -> List[Path]:
     """Re-order path rates according to score.
-    Consideration
-    1. conversion rate taken as initial score (including commissions)
-    2. each additional hop reduces score by 2%
-    3. TODO: take into account possible difficulties of conversion
     """
-    return sorted(path_rates, key=lambda x: x.rate * (1 - 0.02) ** len(x.edges), reverse=True)
+    return sorted(path_rates, key=lambda path: path.score(), reverse=True)
 
 
 class Conversion(BaseModel):
@@ -83,6 +90,7 @@ class Conversion(BaseModel):
     from_amount: float
     to_currency: str
     to_amount: float
+    commission: float
     rate: float
     url: Optional[str]
 
@@ -100,20 +108,23 @@ def prepare_conversion_path(path: Path, source_amount=1) -> ConversionPath:
     conversion_path = ConversionPath(
         source_currency=path.edges[0].from_.currency,
         amount_source_currency=source_amount,
-        conversion_rate=path.rate,
+        conversion_rate=path.rate(),
         target_currency=path.edges[-1].to.currency,
-        amount_target_currency=source_amount * path.rate,
+        amount_target_currency=source_amount * path.rate(),
         conversions=list(),
     )
     amount = source_amount
     for edge in path.edges:
-        converted_amount = edge.converted(amount)
+        commission = edge.commission(amount)
+        converted_amount = edge.converted(amount) - commission
         conversion = Conversion(
             from_currency=edge.from_.currency,
             from_amount=amount,
             to_currency=edge.to.currency,
             to_amount=converted_amount,
-            rate=edge.price,
+            rate=amount / converted_amount,
+            commission=commission,
+            url=edge.url()
         )
         amount = converted_amount
         conversion_path.conversions.append(conversion)

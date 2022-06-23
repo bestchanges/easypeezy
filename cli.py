@@ -24,7 +24,7 @@ def display_conversion_path_detailed(path: ConversionPath):
     print(f'Number of conversions: {len(path.conversions)}')
     print('Conversions:')
     for num, conversion in enumerate(path.conversions):
-        print(f'{num}. {conversion.from_amount:.2f} {conversion.from_currency} -> {conversion.to_amount:.2f} {conversion.to_currency} (rate: {conversion.rate:.5f})')
+        print(f'{num}. {conversion.from_amount:.2f} {conversion.from_currency} -> {conversion.to_amount:.2f} {conversion.to_currency} (rate: {conversion.rate:.5f}) - {conversion.url}')
 
 
 @click.command()
