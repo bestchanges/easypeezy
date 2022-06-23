@@ -1,5 +1,5 @@
 import logging
-from typing import List, Set
+from typing import List, Set, Optional
 
 from pydantic import BaseModel
 from pydantic.fields import defaultdict, DefaultDict
@@ -19,11 +19,14 @@ class Edge:
         self.from_ = from_
         self.to = to
 
-    def commission(self, amount: float = None):
-        pass
+    def commission(self, amount: float = 1) -> float:
+        return 0
 
     def converted(self, amount: float = 1) -> float:
         return amount
+
+    def url(self) -> Optional[str]:
+        pass
 
 
 class EdgeRaw(Edge):
