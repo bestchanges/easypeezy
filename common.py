@@ -7,9 +7,7 @@ from pydantic import BaseModel
 from requests_cache import install_cache
 
 from decider.core import Graph, Edge
-# TODO: non-consistent imports. fix it
-from providers import c2c
-from providers import add_quotes_to_graph
+from providers import c2c, crypto
 
 
 def install_requests_cache():
@@ -33,7 +31,7 @@ def prepare():
     # load binance crypto quotes
     graph = Graph()
     binance = ccxt.binance()
-    add_quotes_to_graph(
+    crypto.add_quotes_to_graph(
         tickers=binance.fetch_tickers(),
         markets=binance.fetch_markets(),
         graph=graph
