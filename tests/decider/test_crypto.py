@@ -3,7 +3,7 @@ import pytest
 import vcr
 
 from decider import core
-from decider.providers import crypto
+from providers import crypto
 
 
 @pytest.fixture

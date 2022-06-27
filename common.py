@@ -1,6 +1,6 @@
 import math
 from datetime import timedelta
-from typing import List, Optional, Iterable
+from typing import List, Optional
 
 import ccxt
 from pydantic import BaseModel
@@ -8,8 +8,8 @@ from requests_cache import install_cache
 
 from decider.core import Graph, Edge
 # TODO: non-consistent imports. fix it
-from decider.providers import c2c
-from decider.providers.crypto import add_quotes_to_graph
+from providers import c2c
+from providers import add_quotes_to_graph
 
 
 def install_requests_cache():

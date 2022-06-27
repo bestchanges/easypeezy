@@ -5,7 +5,6 @@ import pytest
 
 from decider.core import Node, Edge, Graph, EdgeRaw
 # TODO: get rig of crypto here. Build graph from scratch
-from decider.providers import crypto
 
 
 def ticker(symbol, bid, ask):

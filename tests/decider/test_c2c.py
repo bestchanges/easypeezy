@@ -1,6 +1,6 @@
 import vcr
 
-from decider.providers import c2c
+from providers import c2c
 from decider import core
 from decider.core import Node
 
