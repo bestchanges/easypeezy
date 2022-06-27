@@ -1,9 +1,10 @@
 import common
 from decider.core import EdgeRaw, Node
 
-n1 = Node(currency='N1')
-n2 = Node(currency='N2')
-n3 = Node(currency='N3')
+n1 = Node(currency="N1")
+n2 = Node(currency="N2")
+n3 = Node(currency="N3")
+
 
 def test_ordered_paths():
     path1 = common.Path(edges=[EdgeRaw(n1, n2, 4, 0.01)])

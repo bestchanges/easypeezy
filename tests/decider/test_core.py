@@ -4,6 +4,7 @@ from typing import List
 import pytest
 
 from decider.core import Node, Edge, Graph, EdgeRaw
+
 # TODO: get rig of crypto here. Build graph from scratch
 
 
@@ -17,10 +18,10 @@ def ticker(symbol, bid, ask):
     )
 
 
-USDT = Node(currency='USDT')
-BTC = Node(currency='BTC')
-EOS = Node(currency='EOS')
-ETH = Node(currency='ETH')
+USDT = Node(currency="USDT")
+BTC = Node(currency="BTC")
+EOS = Node(currency="EOS")
+ETH = Node(currency="ETH")
 
 BTC_ETH = EdgeRaw(from_=BTC, to=ETH, price=19.23, fee=0.01)
 ETH_BTC = EdgeRaw(from_=ETH, to=BTC, price=0.0526, fee=0.01)
@@ -33,12 +34,13 @@ USDT_ETH = EdgeRaw(from_=USDT, to=ETH, price=0.00091240, fee=0.01)
 
 EDGES = [BTC_ETH, ETH_BTC, EOS_ETH, ETH_EOS, BTC_USDT, USDT_BTC, ETH_USDT, USDT_ETH]
 
+
 @pytest.mark.parametrize(
-    'kwargs, expected, expected_rates',
+    "kwargs, expected, expected_rates",
     [
         # 1-hop ETH to USDT
         [
-            dict(from_currency='ETH', to_currency='USDT', max_length=1),
+            dict(from_currency="ETH", to_currency="USDT", max_length=1),
             [
                 [ETH_USDT],
             ],
@@ -46,7 +48,7 @@ EDGES = [BTC_ETH, ETH_BTC, EOS_ETH, ETH_EOS, BTC_USDT, USDT_BTC, ETH_USDT, USDT_
         ],
         # 2-hop ETH to USDT
         [
-            dict(from_currency='ETH', to_currency='USDT', max_length=2),
+            dict(from_currency="ETH", to_currency="USDT", max_length=2),
             [
                 [ETH_BTC, BTC_USDT],
                 [ETH_USDT],
@@ -55,7 +57,7 @@ EDGES = [BTC_ETH, ETH_BTC, EOS_ETH, ETH_EOS, BTC_USDT, USDT_BTC, ETH_USDT, USDT_
         ],
         # direct 1-hop ETH to BTC
         [
-            dict(from_currency='ETH', to_currency='BTC', max_length=1),
+            dict(from_currency="ETH", to_currency="BTC", max_length=1),
             [
                 [ETH_BTC],
             ],
@@ -63,13 +65,13 @@ EDGES = [BTC_ETH, ETH_BTC, EOS_ETH, ETH_EOS, BTC_USDT, USDT_BTC, ETH_USDT, USDT_
         ],
         # reverse 1-hop BTC to ETH
         [
-            dict(from_currency='BTC', to_currency='ETH', max_length=1),
+            dict(from_currency="BTC", to_currency="ETH", max_length=1),
             [
                 [BTC_ETH],
             ],
             [19.0377],
         ],
-    ]
+    ],
 )
 def test_graph(kwargs, expected: List[Edge], expected_rates):
     graph = Graph()
@@ -77,7 +79,9 @@ def test_graph(kwargs, expected: List[Edge], expected_rates):
         graph.add(edge)
     paths = graph.paths(**kwargs)
     assert paths == expected
-    assert [math.prod([edge.converted() for edge in path]) for path in paths] == expected_rates
+    assert [
+        math.prod([edge.converted() for edge in path]) for path in paths
+    ] == expected_rates
 
 
 # TODO: write test to remove loops in found Path

@@ -13,17 +13,17 @@ from providers import c2c, crypto
 def install_requests_cache():
     default_expire_after = timedelta(hours=1)
     urls_expire_after = {
-        'c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config': timedelta(days=3),
-        'c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search': timedelta(minutes=30),
-        'api.binance.com/api/v3/exchangeInfo': timedelta(days=3),
-        'api.binance.com/api/v3/ticker/24hr': timedelta(minutes=30),
+        "c2c.binance.com/bapi/c2c/v2/friendly/c2c/portal/config": timedelta(days=3),
+        "c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search": timedelta(minutes=30),
+        "api.binance.com/api/v3/exchangeInfo": timedelta(days=3),
+        "api.binance.com/api/v3/ticker/24hr": timedelta(minutes=30),
     }
 
     install_cache(
-        cache_name='cache',
+        cache_name="cache",
         expire_after=default_expire_after,
         urls_expire_after=urls_expire_after,
-        allowable_methods=['GET', 'POST'],
+        allowable_methods=["GET", "POST"],
     )
 
 
@@ -32,18 +32,18 @@ def prepare():
     graph = Graph()
     binance = ccxt.binance()
     crypto.add_quotes_to_graph(
-        tickers=binance.fetch_tickers(),
-        markets=binance.fetch_markets(),
-        graph=graph
+        tickers=binance.fetch_tickers(), markets=binance.fetch_markets(), graph=graph
     )
     return graph
 
 
 def load_c2c_to_graph(fiat_from, fiat_to, graph):
     # load binance C2C quotes
-    for offers in c2c.load_binance_c2c_offers(fiat=fiat_from, trade_type='BUY').values():
+    for offers in c2c.load_binance_c2c_offers(
+        fiat=fiat_from, trade_type="BUY"
+    ).values():
         c2c.add_c2c_offers_to_graph(offers, graph)
-    for offers in c2c.load_binance_c2c_offers(fiat=fiat_to, trade_type='SELL').values():
+    for offers in c2c.load_binance_c2c_offers(fiat=fiat_to, trade_type="SELL").values():
         c2c.add_c2c_offers_to_graph(offers, graph)
 
 
@@ -51,9 +51,9 @@ def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):
     load_c2c_to_graph(fiat_from, fiat_to, graph)
 
     paths = graph.paths(
-        from_currency=f'{fiat_from}(f)',
-        to_currency=f'{fiat_to}(f)',
-        max_length=max_length
+        from_currency=f"{fiat_from}(f)",
+        to_currency=f"{fiat_to}(f)",
+        max_length=max_length,
     )
     return [Path(edges=edges) for edges in paths]
 
@@ -63,7 +63,9 @@ class Path:
         self.edges = edges
 
     def rate(self):
-        return math.prod([edge.converted() * (1 - edge.commission()) for edge in self.edges])
+        return math.prod(
+            [edge.converted() * (1 - edge.commission()) for edge in self.edges]
+        )
 
     def score(self):
         """
@@ -78,8 +80,7 @@ class Path:
 
 
 def ordered_paths(path_rates: List[Path]) -> List[Path]:
-    """Re-order path rates according to score.
-    """
+    """Re-order path rates according to score."""
     return sorted(path_rates, key=lambda path: path.score(), reverse=True)
 
 
@@ -122,14 +123,16 @@ def prepare_conversion_path(path: Path, source_amount=1) -> ConversionPath:
             to_amount=converted_amount,
             rate=amount / converted_amount,
             commission=commission,
-            url=edge.url()
+            url=edge.url(),
         )
         amount = converted_amount
         conversion_path.conversions.append(conversion)
     return conversion_path
 
 
-def prepare_conversion_paths(paths: List[Path], source_amount=1) -> List[ConversionPath]:
+def prepare_conversion_paths(
+    paths: List[Path], source_amount=1
+) -> List[ConversionPath]:
     result = []
     for path in ordered_paths(paths):
         result.append(prepare_conversion_path(path, source_amount))

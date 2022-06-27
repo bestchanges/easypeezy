@@ -45,17 +45,24 @@ class EdgeRaw(Edge):
         return str([self.from_, self.to, self.price, self.fee])
 
     def __eq__(self, o: object) -> bool:
-        return isinstance(o, EdgeRaw) and self.from_ == o.from_ and self.to == o.to and self.price == o.price and self.fee == o.fee
+        return (
+            isinstance(o, EdgeRaw)
+            and self.from_ == o.from_
+            and self.to == o.to
+            and self.price == o.price
+            and self.fee == o.fee
+        )
 
 
-class Graph():
-
+class Graph:
     def __init__(self):
         self._nodes: Set[Node] = set()
         self._edges: List[Edge] = list()
         self._node_outs: DefaultDict[Node, List[Edge]] = defaultdict(list)
 
-    def paths(self, from_currency: str, to_currency: str, max_length=4) -> List[List[Edge]]:
+    def paths(
+        self, from_currency: str, to_currency: str, max_length=4
+    ) -> List[List[Edge]]:
         from_ = Node(currency=from_currency)
         to = Node(currency=to_currency)
         return self.paths_recursive(from_node=from_, to_node=to, max_length=max_length)
@@ -72,7 +79,9 @@ class Graph():
     def __from_node(self, node: Node) -> List[Edge]:
         return self._node_outs[node]
 
-    def paths_recursive(self, from_node: Node, to_node: Node, max_length: int, edges: List[Edge] = None) -> List[List[Edge]]:
+    def paths_recursive(
+        self, from_node: Node, to_node: Node, max_length: int, edges: List[Edge] = None
+    ) -> List[List[Edge]]:
         edges = edges if edges else []
         if from_node == to_node:
             return [edges]
@@ -86,6 +95,6 @@ class Graph():
                 from_node=edge.to,
                 to_node=to_node,
                 max_length=max_length,
-                edges=new_edges
+                edges=new_edges,
             )
         return found_paths

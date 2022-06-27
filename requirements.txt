@@ -3,4 +3,7 @@ pytest
 ccxt
 click
 fastapi[all]
+
+# DEV
 vcrpy
+black
