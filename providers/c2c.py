@@ -3,13 +3,76 @@ Customer to Customer exchange providers.
 """
 import logging
 import statistics
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import requests
 
 from decider import core
+from decider.core import Edge, Node
 
 logger = logging.getLogger(__name__)
+
+
+class BinnanceP2PEdge(Edge):
+    def __init__(
+        self, offers: list, median_price_of_first_n=4
+    ):
+        """
+        :param offers: list of offers. Should be same trade_type, fiat and asset currency
+        :param median_price_of_first_n: median value of first N items will be taken as price
+        """
+
+        fiat_currency = offers[0]["adv"]["fiatUnit"]
+        asset_currency = offers[0]["adv"]["asset"]
+        trade_type = offers[0]["adv"]["tradeType"]
+        assert trade_type in ("BUY", "SELL")
+        assert all([offer["adv"]["tradeType"] == trade_type for offer in offers])
+        assert all([offer["adv"]["fiatUnit"] == fiat_currency for offer in offers])
+        assert all([offer["adv"]["asset"] == asset_currency for offer in offers])
+
+        fiat_node = core.Node(currency=f"{fiat_currency}(f)")
+        asset_node = core.Node(currency=asset_currency)
+
+        prices = [float(item["adv"]["price"]) for item in offers]
+        median_price = statistics.median(prices[:median_price_of_first_n])
+        assert median_price > 0
+
+        if trade_type == "BUY":
+            # base:USDT / quote:KZT 450    - trade_type == BUY
+            # buy crypto (base) for fiat (quote)
+            base = asset_node
+            quote = fiat_node
+            price = median_price
+        else:
+            # base:USDT / quote:KZT 450    - trade_type == SELL
+            base = fiat_node
+            quote = asset_node
+            price = 1 / median_price
+
+        self.trade_type = trade_type
+        self.fiat = fiat_currency
+        self.asset = asset_currency
+
+        self.price = price
+        self.offers = offers
+
+        super().__init__(quote, base)
+
+    def commission(self, amount: float = 1) -> float:
+        return 0
+
+    def converted(self, amount: float = 1) -> float:
+        return amount * self.price
+
+    def url(self) -> Optional[str]:
+        if self.trade_type == 'SELL':
+            url = f'https://c2c.binance.com/ru/trade/all-payments/{self.asset}?fiat={self.fiat}'
+        else:
+            url = f'https://c2c.binance.com/ru/trade/sell/{self.asset}?fiat={self.fiat}&payment=ALL'
+        return url
+
+    def __repr__(self) -> str:
+        return str([self.from_, self.to, self.converted(), self.commission()])
 
 
 def binance_c2c_search(
@@ -54,101 +117,6 @@ def binance_c2c_search(
     )
     r.raise_for_status()
     response_payload = r.json()
-    item = {
-        "adv": {
-            "advNo": "11372091689796468736",
-            "classify": "mass",
-            "tradeType": "SELL",
-            "asset": "USDT",
-            "fiatUnit": "KZT",
-            "advStatus": None,
-            "priceType": None,
-            "priceFloatingRatio": None,
-            "rateFloatingRatio": None,
-            "currencyRate": None,
-            "price": "456.84",
-            "initAmount": "27507.41000000",
-            "surplusAmount": "408.18",
-            "amountAfterEditing": "9696.13000000",
-            "maxSingleTransAmount": "4500000.00",
-            "minSingleTransAmount": "70000.00",
-            "buyerKycLimit": None,
-            "buyerRegDaysLimit": None,
-            "buyerBtcPositionLimit": None,
-            "remarks": None,
-            "autoReplyMsg": "",
-            "payTimeLimit": 15,
-            "tradeMethods": [
-                {
-                    "payId": None,
-                    "payMethodId": "",
-                    "payType": "HalykBank",
-                    "payAccount": None,
-                    "payBank": None,
-                    "paySubBank": None,
-                    "identifier": "HalykBank",
-                    "iconUrlColor": "https://bin.bnbstatic.com/image/admin_mgs_image_upload/20201023/500c91ef-fb9e-48be-ba8b-43c1fc62a7a6.png",
-                    "tradeMethodName": "Halyk Bank",
-                    "tradeMethodShortName": "Halyk Bank",
-                    "tradeMethodBgColor": "#00805F",
-                }
-            ],
-            "userTradeCountFilterTime": None,
-            "userBuyTradeCountMin": None,
-            "userBuyTradeCountMax": None,
-            "userSellTradeCountMin": None,
-            "userSellTradeCountMax": None,
-            "userAllTradeCountMin": None,
-            "userAllTradeCountMax": None,
-            "userTradeCompleteRateFilterTime": None,
-            "userTradeCompleteCountMin": None,
-            "userTradeCompleteRateMin": None,
-            "userTradeVolumeFilterTime": None,
-            "userTradeType": None,
-            "userTradeVolumeMin": None,
-            "userTradeVolumeMax": None,
-            "userTradeVolumeAsset": None,
-            "createTime": None,
-            "advUpdateTime": None,
-            "fiatVo": None,
-            "assetVo": None,
-            "advVisibleRet": None,
-            "assetLogo": None,
-            "assetScale": 2,
-            "fiatScale": 2,
-            "priceScale": 2,
-            "fiatSymbol": "〒",
-            "isTradable": True,
-            "dynamicMaxSingleTransAmount": "186286.66",
-            "minSingleTransQuantity": "153.22",
-            "maxSingleTransQuantity": "9850.27",
-            "dynamicMaxSingleTransQuantity": "407.77",
-            "tradableQuantity": "407.77",
-            "commissionRate": "0.00100000",
-            "tradeMethodCommissionRates": [],
-            "launchCountry": None,
-        },
-        "advertiser": {
-            "userNo": "s853153fcbfa8359a9e9123e9dd6353cd",
-            "realName": None,
-            "nickName": "-VISA-MASTERCARD-",
-            "margin": None,
-            "marginUnit": None,
-            "orderCount": None,
-            "monthOrderCount": 260,
-            "monthFinishRate": 1.0,
-            "advConfirmTime": 0,
-            "email": None,
-            "registrationTime": None,
-            "mobile": None,
-            "userType": "user",
-            "tagIconUrls": [],
-            "userGrade": 2,
-            "userIdentity": "",
-            "proMerchant": None,
-            "isBlocked": None,
-        },
-    }
     return response_payload
 
 
@@ -164,179 +132,6 @@ def binance_c2c_config(fiat: str):
     r.raise_for_status()
     response_payload = r.json()
 
-    # https://c2c.binance.com/bapi/c2c/v2/friendly/
-    r = {
-        "code": "000000",
-        "message": None,
-        "messageDetail": None,
-        "data": {
-            "fiat": "CNY",
-            "areas": [
-                {
-                    "area": "EXPRESS",
-                    "proMerchantFilterAvailable": False,
-                    "tradeSides": [
-                        {
-                            "side": "BUY",
-                            "assets": [
-                                {
-                                    "asset": "USDT",
-                                    "description": "Tether",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BTC",
-                                    "description": "Bitcoin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BUSD",
-                                    "description": "Binance USD",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BNB",
-                                    "description": "Binance Coin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "DOGE",
-                                    "description": "Dogecoin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "ETH",
-                                    "description": "Ethereum",
-                                    "iconUrl": None,
-                                },
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [
-                                {"identifier": "BANK"},
-                                {"identifier": "ALIPAY"},
-                                {"identifier": "WECHAT"},
-                            ],
-                        },
-                        {
-                            "side": "SELL",
-                            "assets": [
-                                {
-                                    "asset": "USDT",
-                                    "description": "Tether",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BTC",
-                                    "description": "Bitcoin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BUSD",
-                                    "description": "Binance USD",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "BNB",
-                                    "description": "Binance Coin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "DOGE",
-                                    "description": "Dogecoin",
-                                    "iconUrl": None,
-                                },
-                                {
-                                    "asset": "ETH",
-                                    "description": "Ethereum",
-                                    "iconUrl": None,
-                                },
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [
-                                {"identifier": "BANK"},
-                                {"identifier": "ALIPAY"},
-                                {"identifier": "WECHAT"},
-                            ],
-                        },
-                    ],
-                },
-                {
-                    "area": "BLOCK",
-                    "proMerchantFilterAvailable": False,
-                    "tradeSides": [
-                        {
-                            "side": "BUY",
-                            "assets": [
-                                {"asset": "USDT", "description": None, "iconUrl": None},
-                                {"asset": "BUSD", "description": None, "iconUrl": None},
-                                {"asset": "BTC", "description": None, "iconUrl": None},
-                                {"asset": "ETH", "description": None, "iconUrl": None},
-                                {"asset": "BNB", "description": None, "iconUrl": None},
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [
-                                {"identifier": "ALIPAY"},
-                                {"identifier": "BANK"},
-                                {"identifier": "WECHAT"},
-                            ],
-                        },
-                        {
-                            "side": "SELL",
-                            "assets": [
-                                {"asset": "USDT", "description": None, "iconUrl": None},
-                                {"asset": "BUSD", "description": None, "iconUrl": None},
-                                {"asset": "BTC", "description": None, "iconUrl": None},
-                                {"asset": "ETH", "description": None, "iconUrl": None},
-                                {"asset": "BNB", "description": None, "iconUrl": None},
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [
-                                {"identifier": "ALIPAY"},
-                                {"identifier": "BANK"},
-                                {"identifier": "WECHAT"},
-                            ],
-                        },
-                    ],
-                },
-                {
-                    "area": "P2P",
-                    "proMerchantFilterAvailable": False,
-                    "tradeSides": [
-                        {
-                            "side": "BUY",
-                            "assets": [
-                                {"asset": "USDT", "description": None, "iconUrl": None},
-                                {"asset": "BTC", "description": None, "iconUrl": None},
-                                {"asset": "BUSD", "description": None, "iconUrl": None},
-                                {"asset": "BNB", "description": None, "iconUrl": None},
-                                {"asset": "ETH", "description": None, "iconUrl": None},
-                                {"asset": "DOGE", "description": None, "iconUrl": None},
-                                {"asset": "DAI", "description": None, "iconUrl": None},
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [],
-                        },
-                        {
-                            "side": "SELL",
-                            "assets": [
-                                {"asset": "USDT", "description": None, "iconUrl": None},
-                                {"asset": "BTC", "description": None, "iconUrl": None},
-                                {"asset": "BUSD", "description": None, "iconUrl": None},
-                                {"asset": "BNB", "description": None, "iconUrl": None},
-                                {"asset": "ETH", "description": None, "iconUrl": None},
-                                {"asset": "DOGE", "description": None, "iconUrl": None},
-                                {"asset": "DAI", "description": None, "iconUrl": None},
-                            ],
-                            "convertAssets": [],
-                            "tradeMethods": [],
-                        },
-                    ],
-                },
-            ],
-            "filterDefaultValues": {"publisherType": ""},
-        },
-        "success": True,
-    }
     return response_payload
 
 
@@ -363,7 +158,7 @@ def load_binance_c2c_offers(fiat: str, trade_type: str, max_offers=10):
 
 
 def add_c2c_offers_to_graph(
-    offers: List[Dict], graph: core.Graph, median_price_of_first_n=4
+    offers: List[Dict], graph: core.Graph,
 ):
     """
     Register C2C offers in graph.
@@ -375,30 +170,6 @@ def add_c2c_offers_to_graph(
     """
     if not offers:
         return
-    fiat_currency = offers[0]["adv"]["fiatUnit"]
-    asset_currency = offers[0]["adv"]["asset"]
-    trade_type = offers[0]["adv"]["tradeType"]
-    assert trade_type in ("BUY", "SELL")
-    assert all([offer["adv"]["tradeType"] == trade_type for offer in offers])
-    assert all([offer["adv"]["fiatUnit"] == fiat_currency for offer in offers])
-    assert all([offer["adv"]["asset"] == asset_currency for offer in offers])
 
-    prices = [float(item["adv"]["price"]) for item in offers]
-    median_price = statistics.median(prices[:median_price_of_first_n])
-    assert median_price > 0
-
-    fiat_node = core.Node(currency=f"{fiat_currency}(f)")
-    asset_node = core.Node(currency=asset_currency)
-    if trade_type == "BUY":
-        # base:USDT / quote:KZT 450    - trade_type == BUY
-        # buy crypto (base) for fiat (quote)
-        base = asset_node
-        quote = fiat_node
-        price = median_price
-    else:
-        # base:USDT / quote:KZT 450    - trade_type == SELL
-        base = fiat_node
-        quote = asset_node
-        price = 1 / median_price
-    edge = core.EdgeRaw(from_=base, to=quote, price=float(price), fee=float(0))
+    edge = BinnanceP2PEdge(offers=offers)
     graph.add(edge)

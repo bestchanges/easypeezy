@@ -1,19 +1,22 @@
+from pathlib import Path
+
 import ccxt
 import pytest
 import vcr
 
 from decider import core
 from providers import crypto
+from tests.testutils import cassette
 
 
 @pytest.fixture
-@vcr.use_cassette("cassettes/fixtures/binance.yaml")
+@vcr.use_cassette(cassette("cassettes/fixtures/binance.yaml"))
 def binance_tickers():
     yield ccxt.binance().fetch_tickers()
 
 
 @pytest.fixture
-@vcr.use_cassette("cassettes/fixtures/binance.yaml")
+@vcr.use_cassette(cassette("cassettes/fixtures/binance.yaml"))
 def binance_markets():
     yield ccxt.binance().fetch_markets()
 

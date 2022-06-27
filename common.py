@@ -39,9 +39,7 @@ def prepare():
 
 def load_c2c_to_graph(fiat_from, fiat_to, graph):
     # load binance C2C quotes
-    for offers in c2c.load_binance_c2c_offers(
-        fiat=fiat_from, trade_type="BUY"
-    ).values():
+    for offers in c2c.load_binance_c2c_offers(fiat=fiat_from, trade_type="BUY").values():
         c2c.add_c2c_offers_to_graph(offers, graph)
     for offers in c2c.load_binance_c2c_offers(fiat=fiat_to, trade_type="SELL").values():
         c2c.add_c2c_offers_to_graph(offers, graph)
