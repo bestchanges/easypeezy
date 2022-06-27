@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from requests_cache import install_cache
 
 from decider.core import Graph, Edge
-from providers import c2c, crypto
+from providers import p2p, crypto
 
 
 def install_requests_cache():
@@ -39,10 +39,10 @@ def prepare():
 
 def load_c2c_to_graph(fiat_from, fiat_to, graph):
     # load binance C2C quotes
-    for offers in c2c.load_binance_c2c_offers(fiat=fiat_from, trade_type="BUY").values():
-        c2c.add_c2c_offers_to_graph(offers, graph)
-    for offers in c2c.load_binance_c2c_offers(fiat=fiat_to, trade_type="SELL").values():
-        c2c.add_c2c_offers_to_graph(offers, graph)
+    for offers in p2p.load_binance_c2c_offers(fiat=fiat_from, trade_type="BUY").values():
+        p2p.add_c2c_offers_to_graph(offers, graph)
+    for offers in p2p.load_binance_c2c_offers(fiat=fiat_to, trade_type="SELL").values():
+        p2p.add_c2c_offers_to_graph(offers, graph)
 
 
 def find_paths_for_fiat(fiat_from, fiat_to, graph, max_length):

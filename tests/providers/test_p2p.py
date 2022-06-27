@@ -2,7 +2,7 @@ import vcr
 
 from decider import core
 from decider.core import Node
-from providers import c2c
+from providers import p2p
 from tests.testutils import cassette
 
 search_item = {
@@ -277,10 +277,10 @@ r = {
 
 
 @vcr.use_cassette(cassette("cassettes/tests/binance_c2c_buy_kzt.yaml"))
-def test_load_binance_c2c_offers_buy_kzt():
+def test_load_binance_p2p_offers_buy_kzt():
     fiat = "KZT"
     trade_type = "BUY"
-    offers = c2c.load_binance_c2c_offers(fiat, trade_type)
+    offers = p2p.load_binance_c2c_offers(fiat, trade_type)
     assert set(offers) == {"USDT", "BTC", "BUSD", "BNB", "ETH", "SHIB"}
     for asset, offers in offers.items():
         assert 0 < len(offers) <= 10
@@ -290,7 +290,7 @@ def test_load_binance_c2c_offers_buy_kzt():
 def test_load_binance_c2c_offers_sell_rub():
     fiat = "RUB"
     trade_type = "SELL"
-    offers = c2c.load_binance_c2c_offers(fiat, trade_type)
+    offers = p2p.load_binance_c2c_offers(fiat, trade_type)
     assert set(offers) == {"USDT", "BTC", "BUSD", "BNB", "ETH", "SHIB", "RUB"}
     for asset, offers in offers.items():
         assert len(offers) <= 10
@@ -299,17 +299,17 @@ def test_load_binance_c2c_offers_sell_rub():
 @vcr.use_cassette(cassette("cassettes/tests/binance_c2c_sell_rub.yaml"))
 def test_add_to_graph_sell_rub():
     graph = core.Graph()
-    offers = c2c.load_binance_c2c_offers(fiat="RUB", trade_type="SELL")
+    offers = p2p.load_binance_c2c_offers(fiat="RUB", trade_type="SELL")
 
-    c2c.add_c2c_offers_to_graph(offers["USDT"], graph)
+    p2p.add_c2c_offers_to_graph(offers["USDT"], graph)
 
     fiat_node = core.Node(currency="RUB(f)")
     asset_node = core.Node(currency="USDT")
     assert graph._nodes == {fiat_node, asset_node}
     # TODO: round result
     assert len(graph._edges) == 1
-    edge = graph._edges[0]  # type:c2c.BinnanceP2PEdge
-    assert type(edge) == c2c.BinnanceP2PEdge
+    edge = graph._edges[0]  # type:p2p.BinnanceP2PEdge
+    assert type(edge) == p2p.BinnanceP2PEdge
     assert edge.commission() == 0
     assert edge.converted() == 61.349999999999994
     assert edge.from_ == asset_node
@@ -318,18 +318,18 @@ def test_add_to_graph_sell_rub():
 
 @vcr.use_cassette(cassette("cassettes/tests/binance_c2c_buy_kzt.yaml"))
 def test_add_to_graph_buy_kzt():
-    offers = c2c.load_binance_c2c_offers(fiat="KZT", trade_type="BUY")
+    offers = p2p.load_binance_c2c_offers(fiat="KZT", trade_type="BUY")
 
     graph = core.Graph()
-    c2c.add_c2c_offers_to_graph(offers["USDT"], graph)
+    p2p.add_c2c_offers_to_graph(offers["USDT"], graph)
 
     fiat_node = core.Node(currency="KZT(f)")
     asset_node = core.Node(currency="USDT")
     assert graph._nodes == {fiat_node, asset_node}
 
     assert len(graph._edges) == 1
-    edge = graph._edges[0]  # type:c2c.BinnanceP2PEdge
-    assert type(edge) == c2c.BinnanceP2PEdge
+    edge = graph._edges[0]  # type:p2p.BinnanceP2PEdge
+    assert type(edge) == p2p.BinnanceP2PEdge
     assert edge.commission() == 0
     assert edge.converted() == 0.0021599671684990386
     assert edge.from_ == fiat_node
@@ -340,11 +340,11 @@ def test_add_to_graph_buy_kzt():
 @vcr.use_cassette(cassette("cassettes/tests/c2c_test_add_to_graph_all.yaml"))
 def test_add_to_graph_all():
     graph = core.Graph()
-    offers_1 = c2c.load_binance_c2c_offers(fiat="KZT", trade_type="BUY")
-    offers_2 = c2c.load_binance_c2c_offers(fiat="RUB", trade_type="SELL")
+    offers_1 = p2p.load_binance_c2c_offers(fiat="KZT", trade_type="BUY")
+    offers_2 = p2p.load_binance_c2c_offers(fiat="RUB", trade_type="SELL")
 
     for asset_offers in list(offers_1.values()) + list(offers_2.values()):
-        c2c.add_c2c_offers_to_graph(asset_offers, graph)
+        p2p.add_c2c_offers_to_graph(asset_offers, graph)
 
     assert graph._nodes == {
         Node(currency="BUSD"),
