@@ -312,8 +312,8 @@ def test_add_to_graph_sell_rub():
     assert type(edge) == c2c.BinnanceP2PEdge
     assert edge.commission() == 0
     assert edge.converted() == 61.349999999999994
-    assert edge.from_ == fiat_node
-    assert edge.to == asset_node
+    assert edge.from_ == asset_node
+    assert edge.to == fiat_node
     assert edge.url() == 'https://c2c.binance.com/ru/trade/sell/USDT?fiat=RUB&payment=ALL'
 
 @vcr.use_cassette(cassette("cassettes/tests/binance_c2c_buy_kzt.yaml"))
@@ -332,8 +332,8 @@ def test_add_to_graph_buy_kzt():
     assert type(edge) == c2c.BinnanceP2PEdge
     assert edge.commission() == 0
     assert edge.converted() == 0.0021599671684990386
-    assert edge.from_ == asset_node
-    assert edge.to == fiat_node
+    assert edge.from_ == fiat_node
+    assert edge.to == asset_node
     assert edge.url() == 'https://c2c.binance.com/ru/trade/all-payments/USDT?fiat=KZT'
 
 

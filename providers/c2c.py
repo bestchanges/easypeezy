@@ -56,7 +56,7 @@ class BinnanceP2PEdge(Edge):
         self.price = price
         self.offers = offers
 
-        super().__init__(quote, base)
+        super().__init__(base, quote)
 
     def commission(self, amount: float = 1) -> float:
         return 0
