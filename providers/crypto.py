@@ -41,7 +41,9 @@ def add_quotes_to_graph(tickers, markets, graph: Graph):
             continue
 
         assets = symbol.split("/")
-        assert len(assets) == 2, f"Symbol {symbol} should be XXX/YYY"
+        if len(assets) != 2:
+            logger.warning(f"Skipping symbol {symbol} because not in form XXX/YYY")
+            continue
         base = Node(currency=assets[0])
         quote = Node(currency=assets[1])
 

@@ -1,7 +1,7 @@
 # Todo
 
 ## Todo
-- [ ] make currency node platform/country(?) aware.
+- [ ] make currency node platform/type aware.
 - [ ] make it work with crypto currencies as well
 - [ ] create simple frontend
 - [ ] include money transfer platforms SWIFT, MoneyGram, Korona, ???
